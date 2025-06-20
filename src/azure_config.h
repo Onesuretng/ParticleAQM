@@ -12,7 +12,6 @@ const String AZURE_IOT_HUB_HOST = AZURE_IOT_HUB_NAME + ".azure-devices.net";
 
 // Method 2: X.509 Certificate Authentication (more secure)
 const bool USE_X509_AUTH = true;  // Set to true to use X.509 certificates
-const String DEVICE_CERT_THUMBPRINT = "A1B2C3D4E5F6..."; // Your real thumbprint
 
 // X.509 Certificate Configuration
 // The certificate and key content are embedded in azure_certs.h

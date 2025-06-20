@@ -5,6 +5,19 @@
 #ifndef AZURE_CERTS_H
 #define AZURE_CERTS_H
 
+// Certificate thumbprint (SHA-1 fingerprint)
+const String DEVICE_CERT_THUMBPRINT = "0CFBE92F9761FC0525B029E09B8374A1295E4890";
+
+// Root CA Certificate (Baltimore CyberTrust Root or DigiCert Global Root G2)
+extern const char AZURE_IOT_ROOT_CA[];
+
+// Device X.509 Certificate (PEM format)
+extern const char AZURE_IOT_CLIENT_CERT[];
+
+// Device Private Key (PEM format)  
+extern const char AZURE_IOT_CLIENT_KEY[];
+
+
 // Device Certificate (PEM format)
 // This is the public certificate that was uploaded to Azure IoT Hub
 const char DEVICE_CERTIFICATE[] = 
@@ -74,6 +87,8 @@ const char CERT_NOT_AFTER[] = "2026-06-16T21:21:03Z";
 
 // Function to get certificate thumbprint/fingerprint
 // This should match the thumbprint shown in Azure IoT Hub
-String getCertificateThumbprint();
+String getCertificateThumbprint() {
+    return DEVICE_CERT_THUMBPRINT;
+}
 
 #endif // AZURE_CERTS_H

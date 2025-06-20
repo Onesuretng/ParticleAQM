@@ -1,8 +1,13 @@
 #Ignore folders
 lib/
 6.2.1/
+certs/
 
 #Ignore files
 *.log
 *.tmp
 nul
+azure_certs.h
+azure_config.h
+
+

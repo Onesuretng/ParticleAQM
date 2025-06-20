@@ -13,6 +13,10 @@
 #include "Adafruit_BME280.h"
 #include "SeeedOLED.h"
 #include "JsonParserGeneratorRK.h"
+#include "azure_config.h"
+#include "azure_certs.h"
+#include "MQTT.h" 
+
 
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
@@ -49,12 +53,17 @@ unsigned long last_lpo = 0; //Remembers the last non-zero low pulse occupancy va
 unsigned long duration; // Holds the duration of the most recent pulse
 float ratio = 0; //Calculated dust ratio based on occupancy and interval
 float concentration = 0; //Calculated dust concentration from the ratio
+MQTT mqttClient;
+bool mqttConnected = false;
 
 int getBMEValues(int &temp, int &humidity, int &pressure);
 void getDustSensorReadings();
 String getAirQuality();
 void createEventPayload(int temp, int humidity, int pressure, String airQuality);
 void updateDisplay(int temp, int humidity, int pressure, String airQuality);
+String createAzurePayload(int temp, int humidity, int pressure, String airQuality);
+bool sendToAzureIoTHub(String payload);
+void sendBothPayloads(int temp, int humidity, int pressure, String airQuality);
 
 
 void setup()
@@ -121,6 +130,12 @@ void loop()
     updateDisplay(temp, humidity, pressure, quality);
 
     createEventPayload(temp, humidity, pressure, quality);
+
+    // Send to Azure IoT Hub
+    if (ENABLE_AZURE_IOT) {
+      String azurePayload = createAzurePayload(temp, humidity, pressure, quality);
+      sendToAzureIoTHub(azurePayload);
+    }
 
     lowpulseoccupancy = 0;
     lastInterval = millis();
@@ -237,4 +252,86 @@ void updateDisplay(int temp, int humidity, int pressure, String airQuality)
     SeeedOled.putNumber(concentration); // Will cast our float to an int to make it more compact
     SeeedOled.putString(" pcs/L");
   }
+}
+
+String createAzurePayload(int temp, int humidity, int pressure, String airQuality)
+{
+  JsonWriterStatic<512> jw;  // Larger buffer for Azure metadata
+  {
+    JsonWriterAutoObject obj(&jw);
+    
+    // Device metadata
+    jw.insertKeyValue("deviceId", DEVICE_ID);
+    jw.insertKeyValue("deviceType", DEVICE_TYPE);
+    jw.insertKeyValue("timestamp", Time.format(TIME_FORMAT_ISO8601_FULL));
+    
+    // Sensor data (same as Particle payload)
+    jw.insertKeyValue("temperature", temp);
+    jw.insertKeyValue("humidity", humidity);
+    jw.insertKeyValue("pressure", pressure);
+    jw.insertKeyValue("airQuality", airQuality);
+    
+    if (lowpulseoccupancy > 0)
+    {
+      jw.insertKeyValue("dustLpo", lowpulseoccupancy);
+      jw.insertKeyValue("dustRatio", ratio);
+      jw.insertKeyValue("dustConcentration", concentration);
+    }
+    
+    // Additional metadata for Azure
+    jw.insertKeyValue("sensorVersion", SENSOR_VERSION);
+    jw.insertKeyValue("location", DEVICE_LOCATION);
+  }
+  
+  return String(jw.getBuffer());
+}
+
+bool sendToAzureIoTHub(String payload)
+{
+  if (!USE_X509_AUTH || !ENABLE_AZURE_IOT) {
+    Serial.println("Azure IoT Hub disabled or not configured");
+    return false;
+  }
+  
+  // Configure MQTT client with X.509 certificates
+  if (!mqttConnected) {
+    // Use enableTls with the certificate chain for Particle MQTT library
+    mqttClient.enableTls(AZURE_IOT_CLIENT_CERT, AZURE_IOT_CLIENT_KEY, AZURE_IOT_ROOT_CA);
+    
+    String mqttServer = String(AZURE_IOT_HUB_HOST);
+    String clientId = String(DEVICE_ID);
+    String username = mqttServer + "/" + clientId + "/?api-version=2021-04-12";
+    
+    // Connect with X.509 authentication (no password needed for cert auth)
+    if (mqttClient.connect(mqttServer, 8883, clientId, username, "")) {
+      mqttConnected = true;
+      if (ENABLE_DEBUG_LOGS) {
+        Serial.println("Connected to Azure IoT Hub via MQTT");
+      }
+    } else {
+      if (ENABLE_DEBUG_LOGS) {
+        Serial.println("Failed to connect to Azure IoT Hub via MQTT");
+      }
+      return false;
+    }
+  }
+  
+  // Check if still connected
+  if (!mqttClient.isConnected()) {
+    mqttConnected = false;
+    if (ENABLE_DEBUG_LOGS) {
+      Serial.println("MQTT connection lost, attempting reconnect...");
+    }
+    return sendToAzureIoTHub(payload); // Recursive call to reconnect
+  }
+  
+  // Publish telemetry data
+  String topic = "devices/" + String(DEVICE_ID) + "/messages/events/";
+  bool success = mqttClient.publish(topic, payload);
+  
+  if (ENABLE_DEBUG_LOGS) {
+    Serial.printlnf("Azure IoT Hub MQTT publish %s", success ? "successful" : "failed");
+  }
+  
+  return success;
 }
