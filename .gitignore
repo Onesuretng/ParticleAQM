@@ -1,0 +1,8 @@
+#Ignore folders
+lib/
+6.2.1/
+
+#Ignore files
+*.log
+*.tmp
+nul
