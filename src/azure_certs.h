@@ -1,6 +1,7 @@
 // X.509 Certificate Configuration for Azure IoT Hub
 // This file contains the device certificate and private key for TLS authentication
 // Generated from certificate files in the certs/ directory
+//Ignore
 
 #ifndef AZURE_CERTS_H
 #define AZURE_CERTS_H

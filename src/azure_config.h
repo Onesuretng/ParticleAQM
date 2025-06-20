@@ -1,3 +1,5 @@
+//Ignore
+
 #ifndef AZURE_CONFIG_H
 #define AZURE_CONFIG_H
 

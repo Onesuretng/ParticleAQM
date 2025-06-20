@@ -7,7 +7,5 @@ certs/
 *.log
 *.tmp
 nul
-azure_certs.h
-azure_config.h
-
-
+src/azure_certs.h
+src/azure_config.h
