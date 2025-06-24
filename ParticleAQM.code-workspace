@@ -3,5 +3,8 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"azureAutomation.directory.basePath": "c:\\Users\\joshle"
+	}
 }
