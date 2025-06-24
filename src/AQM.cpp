@@ -296,7 +296,8 @@ bool sendToAzureIoTHub(String payload)
   // Configure MQTT client with X.509 certificates
   if (!mqttConnected) {
     // Use enableTls with the certificate chain for Particle MQTT library
-    mqttClient.enableTls(AZURE_IOT_CLIENT_CERT, AZURE_IOT_CLIENT_KEY, AZURE_IOT_ROOT_CA);
+    //mqttClient.enableTls(AZURE_IOT_CLIENT_CERT, AZURE_IOT_CLIENT_KEY, AZURE_IOT_ROOT_CA);
+    mqttclient.enableTlsVerification(true); // Enable TLS verification
     
     String mqttServer = String(AZURE_IOT_HUB_HOST);
     String clientId = String(DEVICE_ID);
