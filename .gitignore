@@ -2,6 +2,7 @@
 lib/
 6.2.1/
 certs/
+target/
 
 #Ignore files
 *.log

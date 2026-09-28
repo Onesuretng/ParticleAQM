@@ -3,7 +3,7 @@
 #include <math.h>
 #include "Air_Quality_Sensor.h"
 #include "Adafruit_BME280.h"
-#include "SeeedOLED.h"
+#include "AqmDisplay.h"
 #include "JsonParserGeneratorRK.h"
 
 // Let Device OS manage the connection to the Particle Cloud
@@ -43,11 +43,10 @@ float ratio = 0; //Calculated dust ratio based on occupancy and interval
 float concentration = 0; //Calculated dust concentration from the ratio
 
 
-int getBMEValues(int &temp, int &humidity, int &pressure);
+int getBMEValues(int &temp, int &pressure, int &humidity);
 void getDustSensorReadings();
 String getAirQuality();
 void createEventPayload(int temp, int humidity, int pressure, String airQuality);
-void updateDisplay(int temp, int humidity, int pressure, String airQuality);
 
 void setup()
 {
@@ -57,6 +56,9 @@ void setup()
   // Configure the dust sensor pin as an input
   pinMode(DUST_SENSOR_PIN, INPUT);
 
+  Wire.begin();
+  AqmDisplay::begin();
+
   if (aqSensor.init())
   {
     Serial.println("Air Quality Sensor ready.");
@@ -65,20 +67,6 @@ void setup()
   {
     Serial.println("Air Quality Sensor ERROR!");
   }
-
-  Wire.begin();
-  SeeedOled.init();
-
-  SeeedOled.clearDisplay();
-  SeeedOled.setNormalDisplay();
-  SeeedOled.setPageMode();
-
-  SeeedOled.setTextXY(2, 0);
-  SeeedOled.putString("Particle");
-  SeeedOled.setTextXY(3, 0);
-  SeeedOled.putString("Air Quality");
-  SeeedOled.setTextXY(4, 0);
-  SeeedOled.putString("Monitor");
 
   if (bme.begin())
   {
@@ -110,7 +98,7 @@ void loop()
 
     getDustSensorReadings();
 
-    updateDisplay(temp, humidity, pressure, quality);
+    AqmDisplay::update(temp, humidity, pressure, quality, concentration);
 
     createEventPayload(temp, humidity, pressure, quality);
 
@@ -198,35 +186,4 @@ void createEventPayload(int temp, int humidity, int pressure, String airQuality)
   }
   
   Particle.publish("AQM-Values", jw.getBuffer(), PRIVATE);
-}
-
-void updateDisplay(int temp, int humidity, int pressure, String airQuality)
-{
-  SeeedOled.clearDisplay();
-
-  SeeedOled.setTextXY(0, 3);
-  SeeedOled.putString(airQuality);
-
-  SeeedOled.setTextXY(2, 0);
-  SeeedOled.putString("Temp: ");
-  SeeedOled.putNumber(temp);  //SeeedOled.putNumber((int)(temp * 9 / 5 + 32)); converted to Fahrenheit in getBMEValues
-  SeeedOled.putString("F"); //SeeedOled.putString("C");
-  
-  SeeedOled.setTextXY(3, 0);
-  SeeedOled.putString("Humidity: ");
-  SeeedOled.putNumber(humidity);
-  SeeedOled.putString("%");
-
-  SeeedOled.setTextXY(4, 0);
-  SeeedOled.putString("Press: ");
-  SeeedOled.putNumber(pressure);
-  SeeedOled.putString(" hPa");
-
-  if (concentration > 1)
-  {
-    SeeedOled.setTextXY(5, 0);
-    SeeedOled.putString("Dust: ");
-    SeeedOled.putNumber(concentration); // Will cast our float to an int to make it more compact
-    SeeedOled.putString(" pcs/L");
-  }
 }
