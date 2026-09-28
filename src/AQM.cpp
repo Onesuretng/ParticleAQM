@@ -17,7 +17,8 @@ SYSTEM_MODE(AUTOMATIC);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 
 #define AQS_PIN A2
-#define DUST_SENSOR_PIN D4
+// A0 also supports digital pulse input; D4 is reserved for the TFT chip-select.
+#define DUST_SENSOR_PIN A0
 #define SENSOR_READING_INTERVAL 60000 //update every 60 seconds
 
 /**

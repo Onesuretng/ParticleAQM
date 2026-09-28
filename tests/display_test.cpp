@@ -45,7 +45,7 @@ int main()
   try
   {
     auto &tft = *Adafruit_HX8357::instance;
-    require(tft.cs == D6 && tft.dc == D5, "Incorrect Argon TFT pin mapping");
+    require(tft.cs == D4 && tft.dc == D5, "TFT must use the factory FeatherWing pin mapping");
     require(tft.reset == -1 && tft.type == HX8357D, "Incorrect reset or controller");
     AqmDisplay::begin();
     require(tft.beginArgument == HX8357D, "HX8357D initialization is required");
@@ -53,8 +53,8 @@ int main()
     require(!tft.wrap, "Display must disable text wrapping");
     require(TestPins::modes.at(D3) == INPUT, "V2 touch IRQ must remain an input");
     require(TestPins::levels.count(D3) == 0, "V2 touch IRQ must not be driven as V1 CS");
-    require(TestPins::modes.count(D4) == 0 && TestPins::levels.count(D4) == 0,
-            "Display must not configure or drive the dust sensor pin");
+    require(TestPins::modes.count(A0) == 0 && TestPins::levels.count(A0) == 0,
+            "Display must not configure or drive the A0 dust sensor pin");
     require(TestPins::modes.count(A2) == 0, "Display must not configure the air-quality pin");
     require(tft.texts.size() == 10, "Startup must render title, labels, status and placeholders");
     require(tft.texts[0].value == "Particle Air Quality", "Startup title missing");

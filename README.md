@@ -36,34 +36,43 @@ touchscreen driver.
 | Function | Argon pin / connection |
 | --- | --- |
 | Air quality sensor | A2, unchanged |
-| Dust sensor pulse input | D4, unchanged |
+| Dust sensor pulse input | **A0, move the sensor from the D4 port to the A0 port** |
 | BME280 and STEMMA QT | `Wire`: D0/SDA, D1/SCL |
 | TFT SPI | Dedicated SCK, MOSI/MO, MISO/MI header pins |
 | TFT data/command (DC) | D5 (Feather pin 10), default jumper |
-| TFT chip-select (TCS) | **D6 (Feather pin 11), requires jumper modification below** |
+| TFT chip-select (TCS) | D4 (Feather pin 9), default jumper |
 | microSD chip-select (SCS) | D2 (Feather pin 5), held HIGH; SD is unused |
 | V2 touch interrupt (IRQ) | D3 (Feather pin 6), left as an input |
 | TFT reset / backlight | Software reset; stock always-on backlight, no extra GPIO |
 
-### Required chip-select change
+### Move the dust sensor to A0
 
-**An unmodified FeatherWing cannot share D4 with the existing dust sensor.**
-Its default TFT TCS jumper connects Feather pin 9, which is **Argon D4**, not D9.
-Changing a constant in firmware alone cannot disconnect that trace.
+**Leave the FeatherWing's factory jumpers unchanged.** Its TFT chip-select uses
+Argon D4, so the dust sensor cannot remain on that same pin.
 
-With power disconnected, cut the FeatherWing's **TCS** jumper and connect its
-signal pad (the pad nearest the TCS label) to **Argon D6 / Feather pin 11**.
-Leave DC, SCS, IRQ, and all sensor connectors unchanged. Check that TCS is
-disconnected from D4 and connected to D6 before powering up. The firmware's
-`TFT_CS = D6` assumes this modification has been made.
+With power disconnected, move the dust sensor cable from the sensor board's
+**D4 port to its available A0 port**. Argon A0 can be used as a digital input
+despite its analog label; the existing `pinMode(..., INPUT)` and `pulseIn(..., LOW)`
+read the dust pulses without using the ADC. The firmware uses
+`DUST_SENSOR_PIN = A0` and `TFT_CS = D4`.
 
-**STEMMA QT carries only power and I2C.** If moving the Argon into the display
-socket removed the sensor board's header connection, an I2C cable alone will not
-connect the A2 air-quality sensor or D4 dust sensor. Preserve those signals with
-stacking headers/a FeatherWing expansion board or separate A2 and D4 wiring,
-along with the sensors' required power and common ground. A sensor that required
-5V on the original board still needs that supply; STEMMA QT supplies only 3.3V.
-No software change can read those sensors through a passive I2C connector.
+Keep the air-quality sensor on A2 and the BME280 on its existing I2C connection.
+Do not use the open D2 port for dust: the FeatherWing already uses D2 for its
+microSD chip-select, which this firmware holds HIGH even when SD is unused.
+No FeatherWing soldering or jumper changes are required.
+
+**The Grove board is a passive adapter, not an I2C I/O expander.** With the Argon
+in the display socket and the Grove board's Argon sockets empty, the STEMMA QT
+cable carries only power and I2C. It connects the BME280 bus but does not reconnect
+the A2 air-quality signal or the A0 dust signal.
+
+Connect the Grove board's **A0 signal to Argon A0** and **A2 signal to Argon A2**
+through shared Feather headers/an expansion board or separate signal wires.
+Keep the sensors' required power and a common ground. Moving the dust cable to
+A0 alone is insufficient if the Grove board has no GPIO connection to the Argon.
+A sensor that required 5V on the original board still needs that supply;
+STEMMA QT supplies only 3.3V. No software change can read those sensors through
+a passive I2C connector.
 
 ## Display behavior
 
@@ -77,8 +86,9 @@ or a non-finite concentration, shows `-- pcs/L`.
 
 Only the status and value rectangles are cleared on refresh, so shorter readings
 cannot leave stale digits or dust values behind. No full-screen framebuffer is
-allocated. Sensor pins, sampling interval, dust calculations, and the
-`AQM-Values` event name/JSON fields remain unchanged.
+allocated. Apart from moving the dust input from D4 to A0, sensor connections,
+sampling interval, dust calculations, and the `AQM-Values` event name/JSON fields
+remain unchanged.
 
 ## Build and hardware check
 
@@ -105,8 +115,8 @@ application startup may wait for the Particle connection.
 
 On the physical device, confirm the title and all four rows fit the landscape
 screen, wait for the first sample, and compare the readings with USB serial
-output and `AQM-Values`. Confirm the dust pulse input still works on D4 and that
-shorter values erase cleanly. A lit but blank TFT warrants checking TCS-to-D6,
+output and `AQM-Values`. Confirm the dust pulse input works on A0 and that
+shorter values erase cleanly. A lit but blank TFT warrants checking the stock TCS-to-D4,
 DC-to-D5, and the SPI header seating, not switching to `Wire1`.
 
 Hardware references:

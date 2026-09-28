@@ -5,8 +5,8 @@
 
 namespace
 {
-// Cut the stock TCS-to-D4 jumper and wire TCS to D6; D4 remains the dust input.
-constexpr int8_t TFT_CS = D6;
+// The factory TCS jumper connects Feather pin 9, which is Argon D4.
+constexpr int8_t TFT_CS = D4;
 constexpr int8_t TFT_DC = D5;
 constexpr int8_t SD_CS = D2;
 constexpr int8_t TOUCH_IRQ = D3;
